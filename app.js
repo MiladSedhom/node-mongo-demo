@@ -1,6 +1,6 @@
 import express from 'express'
 import mongoose from 'mongoose'
-import { Student } from './models/student.js'
+import { Address, Skill, Student } from './models/index.js'
 
 const app = express()
 
@@ -14,6 +14,8 @@ app.get('/', (req, res) => {
 
 app.get('/students', (req, res) => {
 	Student.find()
+		.populate({ path: 'addresses', select: 'country city street1 street2' })
+		.populate('skills', 'name') //the second argument is the field
 		.then(r => {
 			res.send(r)
 		})
@@ -22,7 +24,7 @@ app.get('/students', (req, res) => {
 		})
 })
 
-app.get('/students/id/:id', (req, res) => {
+app.get('/studentById/:id', (req, res) => {
 	const { id } = req.params
 
 	Student.findById(id)
@@ -34,19 +36,7 @@ app.get('/students/id/:id', (req, res) => {
 		})
 })
 
-app.put('/students/id/:id', (req, res) => {
-	const { id } = req.params
-
-	Student.findByIdAndUpdate(id, req.body)
-		.then(r => {
-			res.send(r)
-		})
-		.catch(e => {
-			res.status(500).json({ message: e.message })
-		})
-})
-
-app.get('/students/name/:name', (req, res) => {
+app.get('/studentByName/:name', (req, res) => {
 	const { name } = req.params
 
 	Student.find({ $or: [{ firstName: name }, { lastName: name }] })
@@ -58,10 +48,22 @@ app.get('/students/name/:name', (req, res) => {
 		})
 })
 
-app.get('/students/skill/:skill', (req, res) => {
+app.get('/studentBySkill/:skill', (req, res) => {
 	const { skill } = req.params
 
 	Student.find({ skills: skill })
+		.then(r => {
+			res.send(r)
+		})
+		.catch(e => {
+			res.status(500).json({ message: e.message })
+		})
+})
+
+app.put('/students/:id', (req, res) => {
+	const { id } = req.params
+
+	Student.findByIdAndUpdate(id, req.body)
 		.then(r => {
 			res.send(r)
 		})
@@ -86,6 +88,70 @@ app.post('/create-student', (req, res) => {
 	Student.create(req.body)
 		.then(r => res.send(r))
 		.catch(e => console.log(e))
+})
+
+app.post('/create-skill', async (req, res) => {
+	const skill = req.body
+	const newSkill = await Skill.create(skill)
+	await Student.updateMany({ _id: newSkill.students }, { $push: { skills: newSkill._id } })
+	return res.send(newSkill)
+})
+
+app.post('/create-address', async (req, res) => {
+	const address = req.body
+	const newAddress = await Address.create(address)
+	await Student.findByIdAndUpdate(newAddress.student, { $push: { addresses: newAddress._id } })
+	return res.send(newAddress)
+})
+
+app.delete('/delete-skill/:id', async (req, res) => {
+	const id = req.params.id
+	const skill = await Skill.findByIdAndDelete(id)
+	await Student.updateMany({ _id: skill.students }, { $pull: { skills: skill._id } })
+	return res.send(skill)
+})
+
+app.delete('/delete-address/:id', async (req, res) => {
+	const id = req.params.id
+	const address = await Address.findByIdAndDelete(id)
+	await Student.findByIdAndUpdate(address.student, { $pull: { addresses: address._id } })
+	return res.send(address)
+})
+
+app.put('/edit-skill/:id', async (req, res) => {
+	const id = req.params.id
+	const newSkillData = req.body
+
+	const oldSkill = await Skill.findById(id)
+	const newSkill = await Skill.findByIdAndUpdate(id, newSkillData, { new: true })
+	// { new : true } makes mongoose return the updated doc rather than the old one
+
+	await Student.updateMany({ _id: oldSkill.students }, { $pull: { skills: oldSkill._id } })
+	await Student.updateMany({ _id: newSkill.students }, { $push: { skills: newSkill._id } })
+
+	return res.send(newSkill)
+})
+
+app.put('/edit-address/:id', async (req, res) => {
+	const id = req.params.id
+	const newAddressData = req.body
+
+	const oldAddress = await Address.findById(id)
+	const newAddress = await Address.findByIdAndUpdate(id, newAddressData, { new: true })
+
+	console.log(oldAddress, newAddress)
+
+	await Student.findByIdAndUpdate(oldAddress.student, { $pull: { addresses: oldAddress._id } })
+	await Student.findByIdAndUpdate(newAddress.student, { $push: { addresses: newAddress._id } })
+
+	return res.send(newAddress)
+})
+
+app.get('/addressByStudentId/:id', async (req, res) => {
+	const id = req.params.id
+	const address = await Address.find({ student: id })
+	console.log(address)
+	return res.send(address)
 })
 
 const DB =
