@@ -24,7 +24,7 @@ app.get('/students', (req, res) => {
 		})
 })
 
-app.get('/studentById/:id', (req, res) => {
+app.get('/student/id/:id', (req, res) => {
 	const { id } = req.params
 
 	Student.findById(id)
@@ -36,7 +36,7 @@ app.get('/studentById/:id', (req, res) => {
 		})
 })
 
-app.get('/studentByName/:name', (req, res) => {
+app.get('/student/name/:name', (req, res) => {
 	const { name } = req.params
 
 	Student.find({ $or: [{ firstName: name }, { lastName: name }] })
@@ -48,7 +48,7 @@ app.get('/studentByName/:name', (req, res) => {
 		})
 })
 
-app.get('/studentBySkill/:skill', (req, res) => {
+app.get('/student/skill/:skill', (req, res) => {
 	const { skill } = req.params
 
 	Student.find({ skills: skill })
@@ -84,41 +84,41 @@ app.delete('/students/:id', (req, res) => {
 		})
 })
 
-app.post('/create-student', (req, res) => {
+app.post('/students', (req, res) => {
 	Student.create(req.body)
 		.then(r => res.send(r))
 		.catch(e => console.log(e))
 })
 
-app.post('/create-skill', async (req, res) => {
+app.post('/skills', async (req, res) => {
 	const skill = req.body
 	const newSkill = await Skill.create(skill)
 	await Student.updateMany({ _id: newSkill.students }, { $push: { skills: newSkill._id } })
 	return res.send(newSkill)
 })
 
-app.post('/create-address', async (req, res) => {
+app.post('/addresses', async (req, res) => {
 	const address = req.body
 	const newAddress = await Address.create(address)
 	await Student.findByIdAndUpdate(newAddress.student, { $push: { addresses: newAddress._id } })
 	return res.send(newAddress)
 })
 
-app.delete('/delete-skill/:id', async (req, res) => {
+app.delete('/skills/:id', async (req, res) => {
 	const id = req.params.id
 	const skill = await Skill.findByIdAndDelete(id)
 	await Student.updateMany({ _id: skill.students }, { $pull: { skills: skill._id } })
 	return res.send(skill)
 })
 
-app.delete('/delete-address/:id', async (req, res) => {
+app.delete('/addresses/:id', async (req, res) => {
 	const id = req.params.id
 	const address = await Address.findByIdAndDelete(id)
 	await Student.findByIdAndUpdate(address.student, { $pull: { addresses: address._id } })
 	return res.send(address)
 })
 
-app.put('/edit-skill/:id', async (req, res) => {
+app.put('/skills/:id', async (req, res) => {
 	const id = req.params.id
 	const newSkillData = req.body
 
@@ -132,7 +132,7 @@ app.put('/edit-skill/:id', async (req, res) => {
 	return res.send(newSkill)
 })
 
-app.put('/edit-address/:id', async (req, res) => {
+app.put('/addresses/:id', async (req, res) => {
 	const id = req.params.id
 	const newAddressData = req.body
 
@@ -147,7 +147,7 @@ app.put('/edit-address/:id', async (req, res) => {
 	return res.send(newAddress)
 })
 
-app.get('/addressByStudentId/:id', async (req, res) => {
+app.get('/addresses/student/:id', async (req, res) => {
 	const id = req.params.id
 	const address = await Address.find({ student: id })
 	console.log(address)
