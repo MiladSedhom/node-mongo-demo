@@ -1,10 +1,16 @@
 import express from 'express'
+import cors from 'cors'
 import mongoose from 'mongoose'
 import { Address, Skill, Student } from './models/index.js'
 
 const app = express()
 
 app.use(express.json())
+
+app.use(
+	cors()
+	// { object: 'http://localhost:*' }
+)
 
 app.use(express.static('public'))
 
@@ -155,7 +161,7 @@ app.get('/addresses/student/:id', async (req, res) => {
 })
 
 const DB =
-	'mongodb+srv://miladsedhom:kXeBGxI9Wh94gODh@cluster0.juqbpjn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+	'mongodb+srv://miladsedhom:vnhuC7FweqVHwXbT@cluster0.w4xm3gm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
 
 mongoose
 	.connect(DB)
