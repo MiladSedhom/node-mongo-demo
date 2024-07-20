@@ -19,7 +19,11 @@ app.get('/', (req, res) => {
 })
 
 app.get('/students', (req, res) => {
+	let { limit, page } = req.query
+
 	Student.find()
+		.limit(limit ?? 5)
+		.skip(page * limit ?? 0)
 		.populate({ path: 'addresses', select: 'country city street1 street2' })
 		.populate('skills', 'name') //the second argument is the field
 		.then(r => {
