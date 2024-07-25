@@ -21,8 +21,6 @@ app.get('/', (req, res) => {
 app.get('/students', (req, res) => {
 	let { limit, page, sortBy, sortType } = req.query
 
-	console.log(limit, page, sortBy, sortType)
-
 	limit = parseInt(limit) ?? 5
 	page = parseInt(page) ?? 0
 	sortType = sortType === 'desc' ? -1 : 1 // default to ascending if sortType is not 'desc'
@@ -43,40 +41,26 @@ app.get('/students', (req, res) => {
 		})
 })
 
-app.get('/student/id/:id', (req, res) => {
-	const { id } = req.params
+app.get('/students/:q', async (req, res) => {
+	const { q } = req.params
 
-	Student.findById(id)
-		.then(r => {
-			res.send(r)
-		})
-		.catch(e => {
-			res.status(500).json({ message: e.message })
-		})
-})
-
-app.get('/student/name/:name', (req, res) => {
-	const { name } = req.params
-
-	Student.find({ $or: [{ firstName: name }, { lastName: name }] })
-		.then(r => {
-			res.send(r)
-		})
-		.catch(e => {
-			res.status(500).json({ message: e.message })
-		})
-})
-
-app.get('/student/skill/:skill', (req, res) => {
-	const { skill } = req.params
-
-	Student.find({ skills: skill })
-		.then(r => {
-			res.send(r)
-		})
-		.catch(e => {
-			res.status(500).json({ message: e.message })
-		})
+	let data
+	try {
+		if (mongoose.Types.ObjectId.isValid(q)) data = await Student.findById(q)
+		else {
+			data = await Student.find({
+				$or: [
+					{ firstName: q },
+					{ lastName: q },
+					{ skills: { $in: await Skill.find({ name: q }).select('_id') } },
+				],
+			}).populate('skills')
+		}
+		res.status(200).send(data)
+	} catch (e) {
+		console.log(e)
+		res.status(500).json({ message: e.message })
+	}
 })
 
 app.put('/students/:id', (req, res) => {
@@ -105,8 +89,21 @@ app.delete('/students/:id', (req, res) => {
 
 app.post('/students', (req, res) => {
 	Student.create(req.body)
-		.then(r => res.send(r))
-		.catch(e => console.log(e))
+		.then(r => res.status(200).send(r))
+		.catch(e => {
+			res.status(500).json({ message: e.message })
+			console.log(e)
+		})
+})
+
+app.get('/skills', async (req, res) => {
+	try {
+		const skills = await Skill.find()
+		res.status(200).json(skills)
+	} catch (e) {
+		console.error(e)
+		res.status(500).json({ message: e.message })
+	}
 })
 
 app.post('/skills', async (req, res) => {
