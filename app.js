@@ -19,11 +19,19 @@ app.get('/', (req, res) => {
 })
 
 app.get('/students', (req, res) => {
-	let { limit, page } = req.query
+	let { limit, page, sortBy, sortType } = req.query
+
+	console.log(limit, page, sortBy, sortType)
+
+	limit = parseInt(limit) ?? 5
+	page = parseInt(page) ?? 0
+	sortType = sortType === 'desc' ? -1 : 1 // default to ascending if sortType is not 'desc'
+	const sort = sortBy ? { [sortBy]: sortType } : {}
 
 	Student.find()
-		.limit(limit ?? 5)
-		.skip(page * limit ?? 0)
+		.limit(limit)
+		.skip(page * limit)
+		.sort(sort)
 		.populate({ path: 'addresses', select: 'country city street1 street2' })
 		.populate('skills', 'name') //the second argument is the field
 		.then(r => {
@@ -31,6 +39,7 @@ app.get('/students', (req, res) => {
 		})
 		.catch(e => {
 			console.log(e)
+			res.status(500).send('An error occurred while fetching students')
 		})
 })
 
