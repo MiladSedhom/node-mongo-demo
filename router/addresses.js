@@ -1,5 +1,5 @@
 import express from 'express'
-import { Address } from '../models/index.js'
+import { Address, Student } from '../models/index.js'
 
 const router = express.Router()
 
@@ -23,8 +23,6 @@ router.put('/:id', async (req, res) => {
 
 	const oldAddress = await Address.findById(id)
 	const newAddress = await Address.findByIdAndUpdate(id, newAddressData, { new: true })
-
-	console.log(oldAddress, newAddress)
 
 	await Student.findByIdAndUpdate(oldAddress.student, { $pull: { addresses: oldAddress._id } })
 	await Student.findByIdAndUpdate(newAddress.student, { $push: { addresses: newAddress._id } })
