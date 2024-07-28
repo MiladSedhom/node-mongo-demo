@@ -1,5 +1,6 @@
 import express from 'express'
-import { Student } from '../models/index.js'
+import { Skill, Student } from '../models/index.js'
+import mongoose from 'mongoose'
 
 const router = express.Router()
 
@@ -48,6 +49,19 @@ router.get('/:q', async (req, res) => {
 	}
 })
 
+router.post('/', async (req, res) => {
+	try {
+		let { firstName, lastName, skills } = req.body
+
+		const student = await Student.create({ firstName, lastName, skills })
+		await Skill.updateMany({ _id: { $in: skills } }, { $addToSet: { students: student._id } })
+		res.status(200).send(student)
+	} catch (e) {
+		res.status(500).json({ message: e.message })
+		console.log(e)
+	}
+})
+
 router.put('/:id', (req, res) => {
 	const { id } = req.params
 
@@ -69,15 +83,6 @@ router.delete('/:id', (req, res) => {
 		})
 		.catch(e => {
 			res.status(500).json({ message: e.message })
-		})
-})
-
-router.post('/', (req, res) => {
-	Student.create(req.body)
-		.then(r => res.status(200).send(r))
-		.catch(e => {
-			res.status(500).json({ message: e.message })
-			console.log(e)
 		})
 })
 
