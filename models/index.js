@@ -16,7 +16,7 @@ const addressSchema = new mongoose.Schema({
 })
 
 const skillSchema = new mongoose.Schema({
-	name: { type: String, required: true },
+	name: { type: String, required: true, unique: true },
 	students: [{ type: mongoose.Schema.ObjectId, ref: 'Student' }],
 })
 
