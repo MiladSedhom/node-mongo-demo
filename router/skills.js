@@ -15,9 +15,14 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
 	const skill = req.body
-	const newSkill = await Skill.create(skill)
-	await Student.updateMany({ _id: newSkill.students }, { $push: { skills: newSkill._id } })
-	return res.send(newSkill)
+	try {
+		const newSkill = await Skill.create(skill)
+		await Student.updateMany({ _id: newSkill.students }, { $push: { skills: newSkill._id } })
+		return res.status(200).send(newSkill)
+	} catch (e) {
+		console.log(e)
+		return res.status(500).send('Error adding skill')
+	}
 })
 
 router.put('/:id', async (req, res) => {
