@@ -3,6 +3,22 @@ import { Address, Student } from '../models/index.js'
 
 const router = express.Router()
 
+router.get('/', async (req, res) => {
+	try {
+		const addresses = await Address.find().populate('student')
+		return res.status(200).send(addresses)
+	} catch (e) {
+		return res.status(500)
+	}
+})
+
+router.get('/student/:id', async (req, res) => {
+	const id = req.params.id
+	const address = await Address.find({ student: id })
+	console.log(address)
+	return res.send(address)
+})
+
 router.post('/', async (req, res) => {
 	const address = req.body
 	const newAddress = await Address.create(address)
@@ -13,7 +29,7 @@ router.post('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
 	const id = req.params.id
 	const address = await Address.findByIdAndDelete(id)
-	await Student.findByIdAndUpdate(address.student, { $pull: { addresses: address._id } })
+	await Student.findByIdAndUpdate(address?.student, { $pull: { addresses: address._id } })
 	return res.send(address)
 })
 
@@ -28,13 +44,6 @@ router.put('/:id', async (req, res) => {
 	await Student.findByIdAndUpdate(newAddress.student, { $push: { addresses: newAddress._id } })
 
 	return res.send(newAddress)
-})
-
-router.get('/student/:id', async (req, res) => {
-	const id = req.params.id
-	const address = await Address.find({ student: id })
-	console.log(address)
-	return res.send(address)
 })
 
 export default router
