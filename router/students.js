@@ -1,5 +1,5 @@
 import express from 'express'
-import { Skill, Student } from '../models/index.js'
+import { Address, Skill, Student } from '../models/index.js'
 import mongoose from 'mongoose'
 
 const router = express.Router()
@@ -32,7 +32,7 @@ router.get('/:q', async (req, res) => {
 
 	let data
 	try {
-		if (mongoose.Types.ObjectId.isValid(q)) data = await Student.findById(q)
+		if (mongoose.Types.ObjectId.isValid(q)) data = await Student.findById(q).populate('skills addresses')
 		else {
 			data = await Student.find({
 				$or: [
@@ -40,7 +40,7 @@ router.get('/:q', async (req, res) => {
 					{ lastName: q },
 					{ skills: { $in: await Skill.find({ name: q }).select('_id') } },
 				],
-			}).populate('skills')
+			}).populate('skills addresses')
 		}
 		res.status(200).send(data)
 	} catch (e) {
@@ -51,9 +51,19 @@ router.get('/:q', async (req, res) => {
 
 router.post('/', async (req, res) => {
 	try {
-		let { firstName, lastName, skills } = req.body
+		let { firstName, lastName, skills, addresses: addressesData } = req.body
 
 		const student = await Student.create({ firstName, lastName, skills })
+
+		const addresses = await Promise.all(
+			addressesData.map(async address =>
+				Address.create({ ...address, street1: address.street, student: student._id })
+			)
+		)
+
+		student.addresses = addresses.map(a => a._id)
+		student.save()
+
 		await Skill.updateMany({ _id: { $in: skills } }, { $addToSet: { students: student._id } })
 		res.status(200).send(student)
 	} catch (e) {
