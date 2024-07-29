@@ -56,9 +56,7 @@ router.post('/', async (req, res) => {
 		const student = await Student.create({ firstName, lastName, skills })
 
 		const addresses = await Promise.all(
-			addressesData.map(async address =>
-				Address.create({ ...address, street1: address.street, student: student._id })
-			)
+			addressesData.map(async address => Address.create({ ...address, student: student._id }))
 		)
 
 		student.addresses = addresses.map(a => a._id)
